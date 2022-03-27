@@ -57,6 +57,11 @@ func Run(dialAddr string) error {
 		return fmt.Errorf("failed to register gateway: %w", err)
 	}
 
+	err = pbExample.RegisterPingServiceHandler(context.Background(), gwmux, conn)
+	if err != nil {
+		return fmt.Errorf("failed to register gateway: %w", err)
+	}
+
 	oa := getOpenAPIHandler()
 
 	port := os.Getenv("PORT")

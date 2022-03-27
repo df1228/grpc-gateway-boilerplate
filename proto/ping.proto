@@ -1,0 +1,41 @@
+syntax="proto3";
+
+package example;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+// Defines the import path that should be used to import the generated package,
+// and the package name.
+option go_package = "github.com/johanbrandhorst/grpc-gateway-boilerplate/proto;example";
+
+// These annotations are used when generating the OpenAPI file.
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    version: "1.0";
+  };
+  external_docs: {
+    url: "https://github.com/johanbrandhorst/grpc-gateway-boilerplate";
+    description: "gRPC-gateway boilerplate repository";
+  }
+  schemes: HTTPS;
+};
+
+service PingService {
+  rpc Ping(PingRequest) returns (PongResponse) {
+    option (google.api.http) = {
+      // Route to this method from GET requests to /api/v1/ping
+      get: "/api/v1/ping"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "ping"
+      description: "ping"
+      tags: "ping"
+    };
+  }
+}
+
+message PingRequest {}
+message PongResponse {
+  string message = 1;
+}

@@ -31,6 +31,7 @@ func main() {
 		grpc.Creds(credentials.NewServerTLSFromCert(&insecure.Cert)),
 	)
 	pbExample.RegisterUserServiceServer(s, server.New())
+	pbExample.RegisterPingServiceServer(s, server.New())
 
 	// Serve gRPC Server
 	log.Info("Serving gRPC on https://", addr)
