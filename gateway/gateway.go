@@ -64,11 +64,17 @@ func Run(dialAddr string) error {
 
 	oa := getOpenAPIHandler()
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "11000"
+	http_port := os.Getenv("HTTP_PORT")
+	https_port := os.Getenv("HTTPS_PORT")
+	if http_port == "" {
+		http_port = "11000"
 	}
-	gatewayAddr := "0.0.0.0:" + port
+	if https_port == "" {
+		https_port = "11443"
+	}
+	gatewayAddr := "0.0.0.0:" + http_port
+	gatewayAddr2 := "0.0.0.0:" + https_port
+
 	gwServer := &http.Server{
 		Addr: gatewayAddr,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -79,15 +85,26 @@ func Run(dialAddr string) error {
 			oa.ServeHTTP(w, r)
 		}),
 	}
-	// Empty parameters mean use the TLS Config specified with the server.
-	if strings.ToLower(os.Getenv("SERVE_HTTP")) == "true" {
-		log.Info("Serving gRPC-Gateway and OpenAPI Documentation on http://", gatewayAddr)
-		return fmt.Errorf("serving gRPC-Gateway server: %w", gwServer.ListenAndServe())
+	gwServer2 := &http.Server{
+		Addr: gatewayAddr2,
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/api") {
+				gwmux.ServeHTTP(w, r)
+				return
+			}
+			oa.ServeHTTP(w, r)
+		}),
 	}
 
-	gwServer.TLSConfig = &tls.Config{
+	log.Info("Serving gRPC-Gateway and OpenAPI Documentation on http://", gatewayAddr)
+	go func() {
+		log.Errorf("serving gRPC-Gateway server: %w", gwServer.ListenAndServe())
+	}()
+
+	gwServer2.TLSConfig = &tls.Config{
 		Certificates: []tls.Certificate{insecure.Cert},
 	}
-	log.Info("Serving gRPC-Gateway and OpenAPI Documentation on https://", gatewayAddr)
-	return fmt.Errorf("serving gRPC-Gateway server: %w", gwServer.ListenAndServeTLS("", ""))
+
+	log.Info("Serving gRPC-Gateway and OpenAPI Documentation on https://", gatewayAddr2)
+	return fmt.Errorf("serving gRPC-Gateway server: %w", gwServer2.ListenAndServeTLS("", ""))
 }
